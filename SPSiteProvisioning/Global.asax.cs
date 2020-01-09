@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using System.Web.Http;
 namespace SPSiteProvisioning
 {
-    public class WebApiApplication : System.Web.
+    public class WebApiApplication : System.Web.HttpApplication
     {
-
+    
     }
 }

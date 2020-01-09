@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPSiteProvisioning", "SPSiteProvisioning\SPSiteProvisioning.csproj", "{26BDE0E4-B528-4CAD-AFE9-1012EE36E67E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPSiteProvisioningWebApi", "SPSiteProvisioningWebApi\SPSiteProvisioningWebApi.csproj", "{E840B55B-E05E-4EEC-9B64-5E1E2C7BBDFE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{26BDE0E4-B528-4CAD-AFE9-1012EE36E67E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26BDE0E4-B528-4CAD-AFE9-1012EE36E67E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26BDE0E4-B528-4CAD-AFE9-1012EE36E67E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E840B55B-E05E-4EEC-9B64-5E1E2C7BBDFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E840B55B-E05E-4EEC-9B64-5E1E2C7BBDFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E840B55B-E05E-4EEC-9B64-5E1E2C7BBDFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E840B55B-E05E-4EEC-9B64-5E1E2C7BBDFE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
