@@ -11,6 +11,8 @@ using SPSiteProvisioningWebApi.Models;
 using System.IO;
 using SPSiteProvisioningWebApi.Utils;
 using SPSiteProvisioningWebApi.Services;
+using OfficeDevPnP.Core.ALM;
+using OfficeDevPnP.Core.Entities;
 
 namespace SPSiteProvisioningWebApi.Controllers
 {
@@ -36,9 +38,10 @@ namespace SPSiteProvisioningWebApi.Controllers
             };
             templateSiteUrl = "https://chennaitillidsoft.sharepoint.com/sites/developer5";
             binderSiteUrl = "https://chennaitillidsoft.sharepoint.com/sites/POC/SiteProvisioning";
-            SetPropertyBagValue();
+            AddSPFXExtension();
             return View();
         }
+
         public ActionResult TestApp()
         {
             ViewBag.Title = "Home Page";
@@ -50,10 +53,11 @@ namespace SPSiteProvisioningWebApi.Controllers
             ProvisionWorkFlow();
             return View();
         }
+
         public static void ProvisionWorkFlow()
         {
             templateSiteClientContext = new ClientContext(templateSiteUrl);
-            
+
             templateSiteClientContext.Credentials = new SharePointOnlineCredentials("murali@chennaitillidsoft.onmicrosoft.com", passWord);
 
             var workflowServicesManager = new WorkflowServicesManager(templateSiteClientContext, templateSiteClientContext.Web);
@@ -132,7 +136,7 @@ namespace SPSiteProvisioningWebApi.Controllers
             ProvisionWorkFlowAndRelatedList(currentWorkFlow.Xaml, binderSiteUrl);
         }
 
-        public static void ProvisionWorkFlowAndRelatedList(string workFlowXMlFile , string binderSiteUrl)
+        public static void ProvisionWorkFlowAndRelatedList(string workFlowXMlFile, string binderSiteUrl)
         {
             //Return the list the workflow will be associated with
             binderSiteClientContext = new ClientContext(binderSiteUrl);
@@ -160,11 +164,11 @@ namespace SPSiteProvisioningWebApi.Controllers
             //to save and publish it.  
             //This method is shown below for reference.
             //var bbhDocumentWFDefinitionId = service.SaveDefinitionAndPublish("BBHDocument", WorkflowUtil.TranslateWorkflow(bbhDocumentWF));
-            var bbhDocumentWFDefinitionId = service.SaveDefinitionAndPublish("BBHDocument",bbhDocumentWF);
+            var bbhDocumentWFDefinitionId = service.SaveDefinitionAndPublish("BBHDocument", bbhDocumentWF);
 
             //Create the workflow tasks list
             //var taskListId = service.CreateTaskList("BBHDocument Workflow Tasks");
-            var taskListId =  CSOMUtil.GetListByTitle(binderSiteClientContext, "BBHDocument Workflow Tasks");
+            var taskListId = CSOMUtil.GetListByTitle(binderSiteClientContext, "BBHDocument Workflow Tasks");
             //Create the workflow history list
             var historyListId = service.CreateHistoryList("BBHDocument Workflow History");
 
@@ -186,6 +190,60 @@ namespace SPSiteProvisioningWebApi.Controllers
                 var propertyBagValue = binderSiteClientContext.Web.GetPropertyBagValueString("Test Update Property Bag Value", "Not Found");
             }
         }
+
+        public static void AddSPFXExtension()
+        {
+            using (binderSiteClientContext = new ClientContext(binderSiteUrl))
+            {
+                binderSiteClientContext.Credentials = new SharePointOnlineCredentials("murali@chennaitillidsoft.onmicrosoft.com", passWord);
+                
+                //Guid spfxExtension_GlobalHeaderID = new Guid("1e3d3ef7-0983-4d40-9dbb-9c6d4539639a");
+                //string spfxExtName = "react-logo-festoon-client-side-solution";
+                //string spfxExtTitle = "LogoFestoonApplicationCustomizer";
+
+                //string spfxExtDescription = "Logo Festoon Application Customizer";
+                //string spfxExtLocation = "ClientSideExtension.ApplicationCustomizer";
+                ////string spfxExtProps = "";  // add properties if any, else remove this
+
+                //UserCustomAction userCustomAction = binderSiteClientContext.Site.UserCustomActions.Add();
+                //userCustomAction.Name = spfxExtName;
+                //userCustomAction.Title = spfxExtTitle;
+                //userCustomAction.Description = spfxExtDescription;
+                //userCustomAction.Location = spfxExtLocation;
+                //userCustomAction.ClientSideComponentId = spfxExtension_GlobalHeaderID;
+                ////userCustomAction.ClientSideComponentProperties = spfxExtProps;
+
+                //binderSiteClientContext.ExecuteQuery();
+                //using (binderSiteClientContext = new ClientContext(binderSiteUrl))
+                //{
+                    var appManager = new AppManager(binderSiteClientContext); 
+                    var apps = appManager.GetAvailable(); 
+                    var chartsApp = apps.Where(a => a.Title == "react-logo-festoon-client-side-solution").FirstOrDefault(); 
+                    var installApp = appManager.Install(chartsApp);
+                    if (installApp)
+                    {
+                        Guid spfxExtension_GlobalHeaderID1 = chartsApp.Id; 
+                        string spfxExtName1 = chartsApp.Title; 
+                        string spfxExtTitle1 = chartsApp.Title; 
+                        //string spfxExtGroup1 = ""; 
+                        string spfxExtDescription1= "Logo Festoon Application Customizer"; 
+                        string spfxExtLocation1 = "ClientSideExtension.ApplicationCustomizer";
+                        CustomActionEntity ca = new CustomActionEntity
+                        {
+                            Name = spfxExtName1,
+                            Title = spfxExtTitle1,
+                            //Group = spfxExtGroup1,
+                            Description = spfxExtDescription1,
+                            Location = spfxExtLocation1,
+                            ClientSideComponentId = spfxExtension_GlobalHeaderID1
+                        };
+
+                        binderSiteClientContext.Web.AddCustomAction(ca);
+                        binderSiteClientContext.ExecuteQueryRetry();
+                    }
+                }
+            }
+        }
     }
-}
+
 
