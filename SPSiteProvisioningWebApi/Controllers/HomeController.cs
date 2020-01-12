@@ -1,4 +1,6 @@
 ﻿using Microsoft.SharePoint.Client;
+using Microsoft.SharePoint.Client.Application;
+using SharePointPnP.IdentityModel;
 using Microsoft.SharePoint.Client.WorkflowServices;
 using System;
 using System.Collections.Generic;
@@ -13,6 +15,9 @@ using SPSiteProvisioningWebApi.Utils;
 using SPSiteProvisioningWebApi.Services;
 using OfficeDevPnP.Core.ALM;
 using OfficeDevPnP.Core.Entities;
+using OfficeDevPnP.Core.Pages;
+using OfficeDevPnP.Core.Diagnostics;
+using Newtonsoft.Json.Linq;
 
 namespace SPSiteProvisioningWebApi.Controllers
 {
@@ -28,9 +33,12 @@ namespace SPSiteProvisioningWebApi.Controllers
 
         private static SecureString passWord;
 
+        private static string userName;
+
         public ActionResult Index()
         {
             ViewBag.Title = "Home Page";
+            userName = "murali@chennaitillidsoft.onmicrosoft.com";
             passWord = new SecureString();
             foreach (char c in "n@#eTD@098!".ToCharArray())
             {
@@ -38,7 +46,7 @@ namespace SPSiteProvisioningWebApi.Controllers
             };
             templateSiteUrl = "https://chennaitillidsoft.sharepoint.com/sites/developer5";
             binderSiteUrl = "https://chennaitillidsoft.sharepoint.com/sites/POC/SiteProvisioning";
-            AddSPFXExtension();
+            AddSectionAndAddWebpart();
             return View();
         }
 
@@ -216,6 +224,7 @@ namespace SPSiteProvisioningWebApi.Controllers
                 //binderSiteClientContext.ExecuteQuery();
                 //using (binderSiteClientContext = new ClientContext(binderSiteUrl))
                 //{
+
                     var appManager = new AppManager(binderSiteClientContext); 
                     var apps = appManager.GetAvailable(); 
                     var chartsApp = apps.Where(a => a.Title == "react-logo-festoon-client-side-solution").FirstOrDefault(); 
@@ -243,7 +252,114 @@ namespace SPSiteProvisioningWebApi.Controllers
                     }
                 }
             }
+        
+        public static void PageSectionDivision()
+        {
+            OfficeDevPnP.Core.AuthenticationManager authenticationManager = new OfficeDevPnP.Core.AuthenticationManager();
+            using(ClientContext currentSiteContext = authenticationManager.GetSharePointOnlineAuthenticatedContextTenant(binderSiteUrl, userName, passWord)) {
+                string pageName = "POCSiteProvisioning.aspx";
+                ClientSidePage page = ClientSidePage.Load(currentSiteContext, pageName);
+                var appManager = new AppManager(currentSiteContext);
+                var apps = appManager.GetAvailable();
+                ClientSideComponent clientSideComponent = null;
+                var chartsApp = apps.Where(a => a.Title == "hero-control-client-side-solution-ProductionEnv").FirstOrDefault();
+                bool controlPresent = false;
+                bool done = false;
+                int count = 0;
+                do
+                {
+                    try
+                    {
+                        ClientSideComponent[] clientSideComponents = (ClientSideComponent[])page.AvailableClientSideComponents();
+                        clientSideComponent = clientSideComponents.Where(c => c.Id.ToLower() == chartsApp.Id.ToString().ToLower()).FirstOrDefault();
+                        foreach (ClientSideComponent csc in clientSideComponents)
+                        {
+                            if (csc.Id.ToString().ToLower().Contains(chartsApp.Id.ToString().ToLower()))
+                            {
+                                clientSideComponent = csc;
+                                continue;
+                            }
+                        }
+                        //ClientSideWebPart webPart = page.Controls.Where(wP => wP != null)
+                        foreach (var control in page.Controls)
+                        {
+                            ClientSideWebPart cpWP = control as ClientSideWebPart;
+                            if (cpWP != null && cpWP.SpControlData.WebPartId.ToString() == chartsApp.Id.ToString())
+                            {
+                                controlPresent = true;
+                                done = true;
+                            }
+                        }
+
+                        if (!controlPresent)
+                        {
+
+                            ClientSideWebPart WebPart = new ClientSideWebPart(clientSideComponent);
+                            JToken activeValueToken = true;
+
+                            // Find the web part configuration string from the web part file or code debugging
+                            //string propertyJSONString = String.Format("[{{<WP Configuration string>}}]", < parameters >);
+                            //JToken propertyTermToken = JToken.Parse(propertyJSONString);
+                            WebPart.Properties.Add("showOnlyActive", activeValueToken);
+
+                            CanvasSection section = new CanvasSection(page, CanvasSectionTemplate.ThreeColumnVerticalSection, page.Sections.Count + 1);
+                            page.Sections.Add(section);
+                            page.Save();
+                            page.AddControl(WebPart, section.Columns[0]);
+                            page.Save();
+                            page.Publish();
+                            done = true;
+                            controlPresent = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        //Log.Info("Catched exception while adding Capex web part.. Trying again" + ex.Message);
+                        Console.WriteLine(ex);
+                        Console.ReadLine();
+                        count++;
+                    }
+                } while (!done && count <= 5);
+            }
+        }
+        
+        public static void AddSectionAndAddWebpart()
+        {
+            OfficeDevPnP.Core.AuthenticationManager authenticationManager = new OfficeDevPnP.Core.AuthenticationManager();
+            using (binderSiteClientContext = authenticationManager.GetSharePointOnlineAuthenticatedContextTenant(binderSiteUrl, userName, passWord))
+            {
+                //Create a page or get the existing page
+                string pageName = "POCSiteProvisioning.aspx";
+                ClientSidePage page = ClientSidePage.Load(binderSiteClientContext, pageName);
+                //var page = binderSiteClientContext.Web.AddClientSidePage("POCAppProvisioning.aspx", true);
+
+                // Add Section 
+                page.AddSection(CanvasSectionTemplate.ThreeColumn, 5);
+
+                // get the available web parts - this collection will include OOTB and custom SPFx web parts..
+                page.Save();
+
+                // Get all the available webparts
+                var components = page.AvailableClientSideComponents();
+
+                // add the named web part..
+                var webPartToAdd = components.Where(wp => wp.ComponentType == 1 && wp.Name == "HeroControl").FirstOrDefault();
+
+                if (webPartToAdd != null)
+                {
+                    ClientSideWebPart clientWp = new ClientSideWebPart(webPartToAdd) { Order = 1 };
+
+                    //Add the WebPart to the page with appropriate section
+                    page.AddControl(clientWp, page.Sections[1].Columns[1]);
+
+                }
+
+                // the save method creates the page if one doesn't exist with that name in this site..
+                page.Save();
+            }
         }
     }
+
+}
 
 
