@@ -46,7 +46,7 @@ namespace SPSiteProvisioningWebApi.Controllers
             };
             templateSiteUrl = "https://chennaitillidsoft.sharepoint.com/sites/developer5";
             binderSiteUrl = "https://chennaitillidsoft.sharepoint.com/sites/POC/SiteProvisioning";
-            AddSectionAndAddWebpart();
+            ActivateSiteFeature();
             return View();
         }
 
@@ -356,6 +356,38 @@ namespace SPSiteProvisioningWebApi.Controllers
 
                 // the save method creates the page if one doesn't exist with that name in this site..
                 page.Save();
+            }
+        }
+    
+        public static void ActivateSiteFeature()
+        {
+
+            OfficeDevPnP.Core.AuthenticationManager authenticationManager = new OfficeDevPnP.Core.AuthenticationManager();
+            using (templateSiteClientContext = authenticationManager.GetSharePointOnlineAuthenticatedContextTenant(templateSiteUrl, userName, passWord))
+            {
+                var features = templateSiteClientContext.Web.Features;
+                templateSiteClientContext.Load(features);
+                templateSiteClientContext.ExecuteQuery();
+                //Feature sitePageFeature = features.Where(f => f.DisplayName == "Site Pages").FirstOrDefault();
+                //foreach (Feature getfeatureName in features)
+                //{
+                //    //# Set the property name to retrieve the value      
+                //    getfeatureName.Retrieve("DisplayName");
+                //    templateSiteClientContext.Load(getfeatureName);
+                //    templateSiteClientContext.ExecuteQuery();
+                //    //Console.ForegroundColor = ConsoleColor.Green;
+                //    Console.WriteLine("Feature Definition ID:{0}", getfeatureName.DefinitionId, getfeatureName.DisplayName);
+
+                //}
+                //Console.WriteLine(features);
+                //DefinitionId = { 15a572c6e5454d32897abab6f5846e18}
+                //ff48f7e6 - 2fa1 - 428d - 9a15 - ab154762043d
+                Guid guidOfFeature = new Guid("3f59333f4ce1406d8a979ecb0ff0337f");
+                //Feature feature = features.Where(f => f.DefinitionId == guidOfFeature).FirstOrDefault();
+                //var featureId = feature.DefinitionId;
+                features.Add(guidOfFeature, true, FeatureDefinitionScope.Site);
+                templateSiteClientContext.ExecuteQuery();
+                //label1.Text = " Operation Completed";
             }
         }
     }
