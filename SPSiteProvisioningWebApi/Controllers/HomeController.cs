@@ -1,4 +1,6 @@
 ﻿using Microsoft.SharePoint.Client;
+using Microsoft.SharePoint.Client.Application;
+using SharePointPnP.IdentityModel;
 using Microsoft.SharePoint.Client.WorkflowServices;
 using System;
 using System.Collections.Generic;
@@ -11,6 +13,11 @@ using SPSiteProvisioningWebApi.Models;
 using System.IO;
 using SPSiteProvisioningWebApi.Utils;
 using SPSiteProvisioningWebApi.Services;
+using OfficeDevPnP.Core.ALM;
+using OfficeDevPnP.Core.Entities;
+using OfficeDevPnP.Core.Pages;
+using OfficeDevPnP.Core.Diagnostics;
+using Newtonsoft.Json.Linq;
 
 namespace SPSiteProvisioningWebApi.Controllers
 {
@@ -26,9 +33,12 @@ namespace SPSiteProvisioningWebApi.Controllers
 
         private static SecureString passWord;
 
+        private static string userName;
+
         public ActionResult Index()
         {
             ViewBag.Title = "Home Page";
+            userName = "murali@chennaitillidsoft.onmicrosoft.com";
             passWord = new SecureString();
             foreach (char c in "n@#eTD@098!".ToCharArray())
             {
@@ -36,9 +46,10 @@ namespace SPSiteProvisioningWebApi.Controllers
             };
             templateSiteUrl = "https://chennaitillidsoft.sharepoint.com/sites/developer5";
             binderSiteUrl = "https://chennaitillidsoft.sharepoint.com/sites/POC/SiteProvisioning";
-            SetPropertyBagValue();
+            ActivateSiteFeature();
             return View();
         }
+
         public ActionResult TestApp()
         {
             ViewBag.Title = "Home Page";
@@ -50,10 +61,11 @@ namespace SPSiteProvisioningWebApi.Controllers
             ProvisionWorkFlow();
             return View();
         }
+
         public static void ProvisionWorkFlow()
         {
             templateSiteClientContext = new ClientContext(templateSiteUrl);
-            
+
             templateSiteClientContext.Credentials = new SharePointOnlineCredentials("murali@chennaitillidsoft.onmicrosoft.com", passWord);
 
             var workflowServicesManager = new WorkflowServicesManager(templateSiteClientContext, templateSiteClientContext.Web);
@@ -132,7 +144,7 @@ namespace SPSiteProvisioningWebApi.Controllers
             ProvisionWorkFlowAndRelatedList(currentWorkFlow.Xaml, binderSiteUrl);
         }
 
-        public static void ProvisionWorkFlowAndRelatedList(string workFlowXMlFile , string binderSiteUrl)
+        public static void ProvisionWorkFlowAndRelatedList(string workFlowXMlFile, string binderSiteUrl)
         {
             //Return the list the workflow will be associated with
             binderSiteClientContext = new ClientContext(binderSiteUrl);
@@ -160,11 +172,11 @@ namespace SPSiteProvisioningWebApi.Controllers
             //to save and publish it.  
             //This method is shown below for reference.
             //var bbhDocumentWFDefinitionId = service.SaveDefinitionAndPublish("BBHDocument", WorkflowUtil.TranslateWorkflow(bbhDocumentWF));
-            var bbhDocumentWFDefinitionId = service.SaveDefinitionAndPublish("BBHDocument",bbhDocumentWF);
+            var bbhDocumentWFDefinitionId = service.SaveDefinitionAndPublish("BBHDocument", bbhDocumentWF);
 
             //Create the workflow tasks list
             //var taskListId = service.CreateTaskList("BBHDocument Workflow Tasks");
-            var taskListId =  CSOMUtil.GetListByTitle(binderSiteClientContext, "BBHDocument Workflow Tasks");
+            var taskListId = CSOMUtil.GetListByTitle(binderSiteClientContext, "BBHDocument Workflow Tasks");
             //Create the workflow history list
             var historyListId = service.CreateHistoryList("BBHDocument Workflow History");
 
@@ -186,6 +198,202 @@ namespace SPSiteProvisioningWebApi.Controllers
                 var propertyBagValue = binderSiteClientContext.Web.GetPropertyBagValueString("Test Update Property Bag Value", "Not Found");
             }
         }
+
+        public static void AddSPFXExtension()
+        {
+            using (binderSiteClientContext = new ClientContext(binderSiteUrl))
+            {
+                binderSiteClientContext.Credentials = new SharePointOnlineCredentials("murali@chennaitillidsoft.onmicrosoft.com", passWord);
+                
+                //Guid spfxExtension_GlobalHeaderID = new Guid("1e3d3ef7-0983-4d40-9dbb-9c6d4539639a");
+                //string spfxExtName = "react-logo-festoon-client-side-solution";
+                //string spfxExtTitle = "LogoFestoonApplicationCustomizer";
+
+                //string spfxExtDescription = "Logo Festoon Application Customizer";
+                //string spfxExtLocation = "ClientSideExtension.ApplicationCustomizer";
+                ////string spfxExtProps = "";  // add properties if any, else remove this
+
+                //UserCustomAction userCustomAction = binderSiteClientContext.Site.UserCustomActions.Add();
+                //userCustomAction.Name = spfxExtName;
+                //userCustomAction.Title = spfxExtTitle;
+                //userCustomAction.Description = spfxExtDescription;
+                //userCustomAction.Location = spfxExtLocation;
+                //userCustomAction.ClientSideComponentId = spfxExtension_GlobalHeaderID;
+                ////userCustomAction.ClientSideComponentProperties = spfxExtProps;
+
+                //binderSiteClientContext.ExecuteQuery();
+                //using (binderSiteClientContext = new ClientContext(binderSiteUrl))
+                //{
+
+                    var appManager = new AppManager(binderSiteClientContext); 
+                    var apps = appManager.GetAvailable(); 
+                    var chartsApp = apps.Where(a => a.Title == "react-logo-festoon-client-side-solution").FirstOrDefault(); 
+                    var installApp = appManager.Install(chartsApp);
+                    if (installApp)
+                    {
+                        Guid spfxExtension_GlobalHeaderID1 = chartsApp.Id; 
+                        string spfxExtName1 = chartsApp.Title; 
+                        string spfxExtTitle1 = chartsApp.Title; 
+                        //string spfxExtGroup1 = ""; 
+                        string spfxExtDescription1= "Logo Festoon Application Customizer"; 
+                        string spfxExtLocation1 = "ClientSideExtension.ApplicationCustomizer";
+                        CustomActionEntity ca = new CustomActionEntity
+                        {
+                            Name = spfxExtName1,
+                            Title = spfxExtTitle1,
+                            //Group = spfxExtGroup1,
+                            Description = spfxExtDescription1,
+                            Location = spfxExtLocation1,
+                            ClientSideComponentId = spfxExtension_GlobalHeaderID1
+                        };
+
+                        binderSiteClientContext.Web.AddCustomAction(ca);
+                        binderSiteClientContext.ExecuteQueryRetry();
+                    }
+                }
+            }
+        
+        public static void PageSectionDivision()
+        {
+            OfficeDevPnP.Core.AuthenticationManager authenticationManager = new OfficeDevPnP.Core.AuthenticationManager();
+            using(ClientContext currentSiteContext = authenticationManager.GetSharePointOnlineAuthenticatedContextTenant(binderSiteUrl, userName, passWord)) {
+                string pageName = "POCSiteProvisioning.aspx";
+                ClientSidePage page = ClientSidePage.Load(currentSiteContext, pageName);
+                var appManager = new AppManager(currentSiteContext);
+                var apps = appManager.GetAvailable();
+                ClientSideComponent clientSideComponent = null;
+                var chartsApp = apps.Where(a => a.Title == "hero-control-client-side-solution-ProductionEnv").FirstOrDefault();
+                bool controlPresent = false;
+                bool done = false;
+                int count = 0;
+                do
+                {
+                    try
+                    {
+                        ClientSideComponent[] clientSideComponents = (ClientSideComponent[])page.AvailableClientSideComponents();
+                        clientSideComponent = clientSideComponents.Where(c => c.Id.ToLower() == chartsApp.Id.ToString().ToLower()).FirstOrDefault();
+                        foreach (ClientSideComponent csc in clientSideComponents)
+                        {
+                            if (csc.Id.ToString().ToLower().Contains(chartsApp.Id.ToString().ToLower()))
+                            {
+                                clientSideComponent = csc;
+                                continue;
+                            }
+                        }
+                        //ClientSideWebPart webPart = page.Controls.Where(wP => wP != null)
+                        foreach (var control in page.Controls)
+                        {
+                            ClientSideWebPart cpWP = control as ClientSideWebPart;
+                            if (cpWP != null && cpWP.SpControlData.WebPartId.ToString() == chartsApp.Id.ToString())
+                            {
+                                controlPresent = true;
+                                done = true;
+                            }
+                        }
+
+                        if (!controlPresent)
+                        {
+
+                            ClientSideWebPart WebPart = new ClientSideWebPart(clientSideComponent);
+                            JToken activeValueToken = true;
+
+                            // Find the web part configuration string from the web part file or code debugging
+                            //string propertyJSONString = String.Format("[{{<WP Configuration string>}}]", < parameters >);
+                            //JToken propertyTermToken = JToken.Parse(propertyJSONString);
+                            WebPart.Properties.Add("showOnlyActive", activeValueToken);
+
+                            CanvasSection section = new CanvasSection(page, CanvasSectionTemplate.ThreeColumnVerticalSection, page.Sections.Count + 1);
+                            page.Sections.Add(section);
+                            page.Save();
+                            page.AddControl(WebPart, section.Columns[0]);
+                            page.Save();
+                            page.Publish();
+                            done = true;
+                            controlPresent = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        //Log.Info("Catched exception while adding Capex web part.. Trying again" + ex.Message);
+                        Console.WriteLine(ex);
+                        Console.ReadLine();
+                        count++;
+                    }
+                } while (!done && count <= 5);
+            }
+        }
+        
+        public static void AddSectionAndAddWebpart()
+        {
+            OfficeDevPnP.Core.AuthenticationManager authenticationManager = new OfficeDevPnP.Core.AuthenticationManager();
+            using (binderSiteClientContext = authenticationManager.GetSharePointOnlineAuthenticatedContextTenant(binderSiteUrl, userName, passWord))
+            {
+                //Create a page or get the existing page
+                string pageName = "POCSiteProvisioning.aspx";
+                ClientSidePage page = ClientSidePage.Load(binderSiteClientContext, pageName);
+                //var page = binderSiteClientContext.Web.AddClientSidePage("POCAppProvisioning.aspx", true);
+
+                // Add Section 
+                page.AddSection(CanvasSectionTemplate.ThreeColumn, 5);
+
+                // get the available web parts - this collection will include OOTB and custom SPFx web parts..
+                page.Save();
+
+                // Get all the available webparts
+                var components = page.AvailableClientSideComponents();
+
+                // add the named web part..
+                var webPartToAdd = components.Where(wp => wp.ComponentType == 1 && wp.Name == "HeroControl").FirstOrDefault();
+
+                if (webPartToAdd != null)
+                {
+                    ClientSideWebPart clientWp = new ClientSideWebPart(webPartToAdd) { Order = 1 };
+
+                    //Add the WebPart to the page with appropriate section
+                    page.AddControl(clientWp, page.Sections[1].Columns[1]);
+
+                }
+
+                // the save method creates the page if one doesn't exist with that name in this site..
+                page.Save();
+            }
+        }
+    
+        public static void ActivateSiteFeature()
+        {
+
+            OfficeDevPnP.Core.AuthenticationManager authenticationManager = new OfficeDevPnP.Core.AuthenticationManager();
+            using (templateSiteClientContext = authenticationManager.GetSharePointOnlineAuthenticatedContextTenant(templateSiteUrl, userName, passWord))
+            {
+                var features = templateSiteClientContext.Web.Features;
+                templateSiteClientContext.Load(features);
+                templateSiteClientContext.ExecuteQuery();
+                //Feature sitePageFeature = features.Where(f => f.DisplayName == "Site Pages").FirstOrDefault();
+                //foreach (Feature getfeatureName in features)
+                //{
+                //    //# Set the property name to retrieve the value      
+                //    getfeatureName.Retrieve("DisplayName");
+                //    templateSiteClientContext.Load(getfeatureName);
+                //    templateSiteClientContext.ExecuteQuery();
+                //    //Console.ForegroundColor = ConsoleColor.Green;
+                //    Console.WriteLine("Feature Definition ID:{0}", getfeatureName.DefinitionId, getfeatureName.DisplayName);
+
+                //}
+                //Console.WriteLine(features);
+                //DefinitionId = { 15a572c6e5454d32897abab6f5846e18}
+                //ff48f7e6 - 2fa1 - 428d - 9a15 - ab154762043d
+                Guid guidOfFeature = new Guid("3f59333f4ce1406d8a979ecb0ff0337f");
+                //Feature feature = features.Where(f => f.DefinitionId == guidOfFeature).FirstOrDefault();
+                //var featureId = feature.DefinitionId;
+                features.Add(guidOfFeature, true, FeatureDefinitionScope.Site);
+                templateSiteClientContext.ExecuteQuery();
+                //label1.Text = " Operation Completed";
+            }
+        }
+    }
+
+}
+
 
         public static void AddSPFXExtension()
         {

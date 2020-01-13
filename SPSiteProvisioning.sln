@@ -1,11 +1,14 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPSiteProvisioning", "SPSiteProvisioning\SPSiteProvisioning.csproj", "{26BDE0E4-B528-4CAD-AFE9-1012EE36E67E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPSiteProvisioningWebApi", "SPSiteProvisioningWebApi\SPSiteProvisioningWebApi.csproj", "{E840B55B-E05E-4EEC-9B64-5E1E2C7BBDFE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{26BDE0E4-B528-4CAD-AFE9-1012EE36E67E} = {26BDE0E4-B528-4CAD-AFE9-1012EE36E67E}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,5 +27,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F63FEC68-DAEC-4A22-A08B-DBD25B376947}
 	EndGlobalSection
 EndGlobal
