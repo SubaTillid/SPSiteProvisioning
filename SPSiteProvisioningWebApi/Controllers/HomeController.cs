@@ -128,7 +128,7 @@ namespace SPSiteProvisioningWebApi.Controllers
             templateSiteClientContext.ExecuteQuery();
 
             // display list of all installed workflows
-            WorkflowDefinition currentWorkFlow = publishedWorkflowDefinitions.Where(flow => flow.DisplayName.Equals("BBH Document Atestation")).First();
+            WorkflowDefinition currentWorkFlow = publishedWorkflowDefinitions.Where(flow => flow.DisplayName.Equals("BBH Document Atestation")).FirstOrDefault();
             ProvisionWorkFlowAndRelatedList(currentWorkFlow.Xaml, binderSiteUrl);
         }
 
@@ -184,6 +184,33 @@ namespace SPSiteProvisioningWebApi.Controllers
                 binderSiteClientContext.Web.SetPropertyBagValue("Test Update Property Bag Value 1", "Successfully Updated");
                 binderSiteClientContext.ExecuteQuery();
                 var propertyBagValue = binderSiteClientContext.Web.GetPropertyBagValueString("Test Update Property Bag Value", "Not Found");
+            }
+        }
+
+        public static void AddSPFXExtension()
+        {
+            using(binderSiteClientContext = new ClientContext(binderSiteUrl))
+            {
+                binderSiteClientContext.Credentials = new SharePointOnlineCredentials("murali@chennaitillidsoft.onmicrosoft.com", passWord);
+
+                //AppDeclaration App = appConfiguration.Apps.Find(app => app.appName.Contains("<app name>"));
+                Guid spfxExtension_GlobalHeaderID = new Guid("59a815be-4478-4ca7-b992-3c42fd0bdfaf");
+                string spfxExtName = "react-logo-festoon";
+                string spfxExtTitle = "Application Extension - Deployment of custom action.";
+
+                string spfxExtDescription = "Deploys a custom action with ClientSideComponentId association";
+                string spfxExtLocation = "ClientSideExtension.ApplicationCustomizer";
+                string spfxExtProps = "";  // add properties if any, else remove this
+
+                UserCustomAction userCustomAction = binderSiteClientContext.Site.UserCustomActions.Add();
+                userCustomAction.Name = spfxExtName;
+                userCustomAction.Title = spfxExtTitle;
+                userCustomAction.Description = spfxExtDescription;
+                userCustomAction.Location = spfxExtLocation;
+                userCustomAction.ClientSideComponentId = spfxExtension_GlobalHeaderID;
+                userCustomAction.ClientSideComponentProperties = spfxExtProps;
+
+                binderSiteClientContext.Site.Context.ExecuteQuery();
             }
         }
     }
